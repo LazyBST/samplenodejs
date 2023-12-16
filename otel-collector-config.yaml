@@ -1,0 +1,53 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+      grpc:
+  redis:
+    endpoint: "host.docker.internal:6379"
+    username: "test"
+    # password: "test"
+    collection_interval: 10s
+    # tls:
+    #   insecure: true
+  postgresql:
+    endpoint: host.docker.internal:54324 # update port
+    transport: tcp
+    username: your_username
+    password: your_password
+    databases:
+      - your_database
+    collection_interval: 10s
+    tls:
+      insecure: true
+      # insecure_skip_verify: false
+      # ca_file: /home/otel/authorities.crt
+      # cert_file: /home/otel/mypostgrescert.crt
+      # key_file: /home/otel/mypostgreskey.key
+
+exporters:
+  logging:
+  otlphttp:
+    endpoint: https://otel.kloudmate.com:4318
+    headers: { "Authorization": <kcloudemate_token> }
+
+processors:
+  resourcedetection:
+    detectors: [env, system]
+  cumulativetodelta:
+  batch:
+    timeout: 10s
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [logging, otlphttp]
+    metrics:
+      receivers: [otlp, redis, postgresql]
+      processors: [batch, cumulativetodelta, resourcedetection]
+      exporters: [logging, otlphttp]
+    logs:
+      receivers: [otlp]
+      exporters: [logging, otlphttp]

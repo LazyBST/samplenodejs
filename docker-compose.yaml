@@ -1,0 +1,51 @@
+version: "3"
+services:
+  # Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otlp-collector-container
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "1888:1888"   # pprof extension
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP http receiver
+      - "2255:2255"
+    networks:
+      - otlp-network
+
+  #Redis
+  redis:
+    image: redis
+    container_name: my-redis-container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - otlp-network
+
+  #pg
+  postgres:
+    image: postgres:latest
+    container_name: my-postgres-container
+    environment:
+      POSTGRES_USER: your_username
+      POSTGRES_PASSWORD: your_password
+      POSTGRES_DB: your_database
+    ports:
+      - "54324:5432" # updated port
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - otlp-network
+
+networks:
+  otlp-network:
+    external: true
+volumes:
+  postgres_data:
+  redis_data:
